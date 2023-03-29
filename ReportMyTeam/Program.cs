@@ -175,103 +175,120 @@ namespace ReportMyTeam
         {
             string[] currentTeam = clientRequest(leagueAuth, "GET", "lol-end-of-game/v1/eog-stats-block", "");
 
-            if (currentTeam[0] == "200")
+            if (currentTeam[0] != "200")
             {
-                string currentGameId = currentTeam[1].Split("\"gameId\":")[1].Split(',')[0];
-                if (lastGameId == currentGameId)
+                // Handle error
+                return;
+            }
+
+            string currentGameId = currentTeam[1].Split("\"gameId\":")[1].Split(',')[0];
+            if (lastGameId == currentGameId)
+            {
+
+                // Already processed this game
+                return;
+            }
+            lastGameId = currentGameId;
+
+            if (currentPlayerId == "0")
+            {
+                currentPlayerId = currentTeam[1].Split("\"localPlayer\"")[1].Split("\"summonerId\":")[1].Split(',')[0];
+            }
+
+            string[] teams = currentTeam[1].Split("\"teams\"")[1].Split(",\"timeUntilNextFirstWinBonus\"")[0].Split("},{\"fullId\":");
+            foreach (var team in teams)
+            {
+                string[] players = team.Split("},{");
+
+                // find average level of a player in team and total kills count
+                (float averageLevel, int teamKills) = GetTeamStats(players);
+
+                foreach (var player in players)
                 {
-                    return;
+                    handlePlayer(player, averageLevel, teamKills, currentGameId);
+                }
+            }
+            Console.WriteLine("------------------");
+            
+        }
+
+        private static (float averageLevel, int teamKills) GetTeamStats(string[] players)
+        {
+            float averageLevel = 0;
+            int teamKills = 0;
+            foreach (var player in players)
+            {
+                int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
+                int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
+                averageLevel += level;
+                teamKills += kills;
+            }
+            averageLevel = averageLevel / players.Length;
+
+            return (averageLevel, teamKills);
+        }
+
+        private static void handlePlayer(string player, float averageLevel, int teamKills, string currentGameId)
+        {
+            // parse some basic data about the player we are currently looping through
+            string playerName = player.Split("summonerName\":\"")[1].Split('"')[0];
+            string playerId = player.Split("summonerId\":")[1].Split(',')[0];
+
+            // ignored certain players cause bias
+            if (currentPlayerId == playerId)
+            {
+                Console.WriteLine(playerName + " is the current account, ignoring");
+            }
+            else if (friendsIds.Contains(playerId))
+            {
+                Console.WriteLine(playerName + " is a friend, ignoring");
+            }
+            else
+            {
+                // parse some data
+                string isLeaver = player.Split("\"leaver\":")[1].Split(',')[0];
+                int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
+                int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
+                int deaths = Int32.Parse(player.Split("NUM_DEATHS\":")[1].Split(',')[0]);
+                int assists = Int32.Parse(player.Split("ASSISTS\":")[1].Split(',')[0]);
+
+                // make up some reasons
+                int reasons = 0;
+                string reportReason = "";
+
+                // if is marked as afk by the system, or is 25% behind in levels compared to average level, or has <25% kp, report for afking
+                float kp = (float)(kills + assists) / teamKills;
+                if (isLeaver == "true" || (float)(level * 0.75) > averageLevel || kp < 0.25)
+                {
+                    reportReason += ",LEAVING_AFK";
+                    reasons++;
+                }
+
+                // if has <0.5 kda, report for inting
+                float kda = (float)(kills + assists) / deaths;
+                if (kda < 0.5)
+                {
+                    reportReason += ",ASSISTING_ENEMY_TEAM";
+                    reasons++;
+                }
+
+                // fill the reason with generic stuff related to toxicity cause everyone is toxic in this shitty game
+                if (reasons == 2)
+                {
+                    reportReason = "NEGATIVE_ATTITUDE" + reportReason;
+                }
+                else if (reasons == 1)
+                {
+                    reportReason = "NEGATIVE_ATTITUDE,VERBAL_ABUSE" + reportReason;
                 }
                 else
                 {
-                    lastGameId = currentGameId;
+                    reportReason = "NEGATIVE_ATTITUDE,VERBAL_ABUSE,HATE_SPEECH";
                 }
 
-                if (currentPlayerId == "0")
-                {
-                    currentPlayerId = currentTeam[1].Split("\"localPlayer\"")[1].Split("\"summonerId\":")[1].Split(',')[0];
-                }
-
-                string[] teams = currentTeam[1].Split("\"teams\"")[1].Split(",\"timeUntilNextFirstWinBonus\"")[0].Split("},{\"fullId\":");
-                foreach (var team in teams)
-                {
-                    string[] players = team.Split("},{");
-
-                    // find average level of a player in team and total kills count
-                    float averageLevel = 0;
-                    int teamKills = 0;
-                    foreach (var player in players)
-                    {
-                        int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
-                        int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
-                        averageLevel += level;
-                        teamKills += kills;
-                    }
-                    averageLevel = averageLevel / players.Length;
-
-                    foreach (var player in players)
-                    {
-                        // parse some basic data about the player we are currently looping through
-                        string playerName = player.Split("summonerName\":\"")[1].Split('"')[0];
-                        string playerId = player.Split("summonerId\":")[1].Split(',')[0];
-
-                        // ignored certain players cause bias
-                        if (currentPlayerId == playerId) {
-                            Console.WriteLine(playerName + " is the current account, ignoring");
-                        }
-                        else if (friendsIds.Contains(playerId))
-                        {
-                            Console.WriteLine(playerName + " is a friend, ignoring");
-                        }
-                        else
-                        {   
-                            // parse some data
-                            string isLeaver = player.Split("\"leaver\":")[1].Split(',')[0];
-                            int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
-                            int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
-                            int deaths = Int32.Parse(player.Split("NUM_DEATHS\":")[1].Split(',')[0]);
-                            int assists = Int32.Parse(player.Split("ASSISTS\":")[1].Split(',')[0]);
-
-                            // make up some reasons
-                            int reasons = 0;
-                            string reportReason = "";
-
-                            // if is marked as afk by the system, or is 25% behind in levels compared to average level, or has <25% kp, report for afking
-                            float kp = (float)(kills + assists) / teamKills;
-                            if (isLeaver == "true" || (float)(level * 0.75) > averageLevel || kp < 0.25) {
-                                reportReason += ",LEAVING_AFK";
-                                reasons++;
-                            }
-
-                            // if has <0.5 kda, report for inting
-                            float kda = (float)(kills + assists) / deaths;
-                            if (kda < 0.5)
-                            {
-                                reportReason += ",ASSISTING_ENEMY_TEAM";
-                                reasons++;
-                            }
-
-                            // fill the reason with generic stuff related to toxicity cause everyone is toxic in this shitty game
-                            if (reasons == 2)
-                            {
-                                reportReason = "NEGATIVE_ATTITUDE" + reportReason;
-                            } 
-                            else if (reasons == 1)
-                            {
-                                reportReason = "NEGATIVE_ATTITUDE,VERBAL_ABUSE" + reportReason;
-                            }
-                            else
-                            {
-                                reportReason = "NEGATIVE_ATTITUDE,VERBAL_ABUSE,HATE_SPEECH";
-                            }
-
-                            // send the report
-                            clientRequest(leagueAuth, "POST", "lol-end-of-game/v2/player-complaints", '{' + "\"gameId\":" + currentGameId + ",\"offenses\":\"" + reportReason + "\",\"reportedSummonerId\":" + playerId + '}');
-                            Console.WriteLine(playerName + " is a being reported for " + reportReason);
-                        }
-                    }
-                }
-                Console.WriteLine("------------------");
+                // send the report
+                clientRequest(leagueAuth, "POST", "lol-end-of-game/v2/player-complaints", '{' + "\"gameId\":" + currentGameId + ",\"offenses\":\"" + reportReason + "\",\"reportedSummonerId\":" + playerId + '}');
+                Console.WriteLine(playerName + " is a being reported for " + reportReason);
             }
         }
 
