@@ -69,7 +69,7 @@ namespace ReportMyTeam
             return new string[] { authBase64, port };
         }
 
-        public static string[] clientRequest(string method, string url, string body)
+        public static string[] clientRequest(string method, string url, string body = null)
         {
             // Ignore invalid https
             var handler = new HttpClientHandler()
@@ -86,14 +86,11 @@ namespace ReportMyTeam
 
                     // Set headers
                     HttpRequestMessage request = new HttpRequestMessage(new HttpMethod(method), url);
-                    request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
                     // Send POST data when doing a post request
-                    if (method == "POST" || method == "PUT" || method == "PATCH")
+                    if (!string.IsNullOrEmpty(body))
                     {
-                        string postData = body;
-                        byte[] byteArray = Encoding.UTF8.GetBytes(postData);
-                        request.Content = new ByteArrayContent(byteArray);
+                        request.Content = new StringContent(body, Encoding.UTF8, "application/json");
                     }
 
                     // Get the response
@@ -102,8 +99,7 @@ namespace ReportMyTeam
                     // If the response is null (League client closed?)
                     if (response == null)
                     {
-                        string[] outputDef = { "999", "" };
-                        return outputDef;
+                        return new string[] { "999", "" };
                     }
 
                     // Get the HTTP status code
@@ -117,15 +113,13 @@ namespace ReportMyTeam
                     response.Dispose();
 
                     // Return content
-                    string[] output = { statusString, responseFromServer };
-                    return output;
+                    return new string[] { statusString, responseFromServer };
                 }
             }
             catch
             {
                 // If the URL is invalid (League client closed?)
-                string[] output = { "999", "" };
-                return output;
+                return new string[] { "999", "" };
             }
         }
     }
