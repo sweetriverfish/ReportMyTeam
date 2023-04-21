@@ -205,6 +205,7 @@ namespace ReportMyTeam
             else
             {
                 // parse some data
+                string playerPuuid = player.Split("puuid\":\"")[1].Split('"')[0];
                 string isLeaver = player.Split("\"leaver\":")[1].Split(',')[0];
                 int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
                 int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
@@ -219,7 +220,7 @@ namespace ReportMyTeam
                 float kp = (float)(kills + assists) / teamKills;
                 if (isLeaver == "true" || (float)(level * 0.75) > averageLevel || kp < 0.25)
                 {
-                    reportReason += ",LEAVING_AFK";
+                    reportReason += ",\"LEAVING_AFK\"";
                     reasons++;
                 }
 
@@ -227,26 +228,27 @@ namespace ReportMyTeam
                 float kda = (float)(kills + assists) / deaths;
                 if (kda < 0.5)
                 {
-                    reportReason += ",ASSISTING_ENEMY_TEAM";
+                    reportReason += ",\"ASSISTING_ENEMY_TEAM\"";
                     reasons++;
                 }
 
                 // fill the reason with generic stuff related to toxicity cause everyone is toxic in this shitty game
                 if (reasons == 2)
                 {
-                    reportReason = "NEGATIVE_ATTITUDE" + reportReason;
+                    reportReason = "\"NEGATIVE_ATTITUDE\"" + reportReason;
                 }
                 else if (reasons == 1)
                 {
-                    reportReason = "NEGATIVE_ATTITUDE,VERBAL_ABUSE" + reportReason;
+                    reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\"" + reportReason;
                 }
                 else
                 {
-                    reportReason = "NEGATIVE_ATTITUDE,VERBAL_ABUSE,HATE_SPEECH";
+                    reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"HATE_SPEECH\"";
                 }
 
                 // send the report
-                LCU.clientRequest("POST", "lol-end-of-game/v2/player-complaints", '{' + "\"gameId\":" + currentGameId + ",\"offenses\":\"" + reportReason + "\",\"reportedSummonerId\":" + playerId + '}');
+                LCU.clientRequest("POST", "lol-end-of-game/v2/player-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
+
                 Console.WriteLine(playerName + " is a being reported for " + reportReason);
             }
         }
