@@ -47,7 +47,7 @@ namespace ReportMyTeam
 
         public static void getFriendsIds()
         {
-            string[] friendsList = LCU.clientRequest("GET", "lol-chat/v1/friends", "");
+            string[] friendsList = LCU.clientRequest("GET", "lol-chat/v1/friends");
             //Console.WriteLine(friendsList[1]);
 
             if (friendsList[0] == "200")
@@ -79,7 +79,7 @@ namespace ReportMyTeam
             {
                 if (LCU.isClientOn)
                 {
-                    string[] gameSession = LCU.clientRequest("GET", "lol-gameflow/v1/session", "");
+                    string[] gameSession = LCU.clientRequest("GET", "lol-gameflow/v1/session");
 
                     if (gameSession[0] == "200")
                     {
@@ -132,7 +132,7 @@ namespace ReportMyTeam
 
         private static void hanldeEndGame()
         {
-            string[] currentTeam = LCU.clientRequest("GET", "lol-end-of-game/v1/eog-stats-block", "");
+            string[] currentTeam = LCU.clientRequest("GET", "lol-end-of-game/v1/eog-stats-block");
 
             if (currentTeam[0] != "200")
             {
@@ -245,8 +245,6 @@ namespace ReportMyTeam
                 {
                     reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"HATE_SPEECH\"";
                 }
-
-                // send the report
 
                 // send the report
                 string[] result = LCU.clientRequest("POST", "lol-end-of-game/v2/player-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
