@@ -247,9 +247,18 @@ namespace ReportMyTeam
                 }
 
                 // send the report
-                LCU.clientRequest("POST", "lol-end-of-game/v2/player-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
 
-                Console.WriteLine(playerName + " is a being reported for " + reportReason);
+                // send the report
+                string[] result = LCU.clientRequest("POST", "lol-end-of-game/v2/player-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
+
+                if (result[0] == "200")
+                {
+                    Console.WriteLine(playerName + " is a being reported for " + reportReason);
+                }
+                else
+                {
+                    Console.WriteLine("Failed to report " + playerName);
+                }
             }
         }
     }
