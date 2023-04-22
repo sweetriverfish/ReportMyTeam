@@ -22,8 +22,12 @@ namespace ReportMyTeam
         private static void Main()
         {
             Console.Write("Initializing..");
-            //Console.CursorVisible = false;
+
+            // Set console title
             Console.Title = "ReportMyTeam";
+
+            // Set output to UTF8
+            Console.OutputEncoding = Encoding.UTF8;
 
             var taskPhase = new Task(findPhase);
             taskPhase.Start(); 
