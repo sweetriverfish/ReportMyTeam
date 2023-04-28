@@ -1,14 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.IO;
-using System.Net;
-using System.Threading;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Text.RegularExpressions;
-using System.Net.Http.Headers;
 
 namespace ReportMyTeam
 {
@@ -52,7 +42,6 @@ namespace ReportMyTeam
         public static void getFriendsIds()
         {
             string[] friendsList = LCU.clientRequest("GET", "lol-chat/v1/friends");
-            //Console.WriteLine(friendsList[1]);
 
             if (friendsList[0] == "200")
             {
@@ -137,6 +126,7 @@ namespace ReportMyTeam
         private static void hanldeEndGame()
         {
             string[] currentTeam = LCU.clientRequest("GET", "lol-end-of-game/v1/eog-stats-block");
+            Console.WriteLine(currentTeam[1]);
 
             if (currentTeam[0] != "200")
             {
@@ -163,35 +153,16 @@ namespace ReportMyTeam
             {
                 string[] players = team.Split("},{");
 
-                // find average level of a player in team and total kills count
-                (float averageLevel, int teamKills) = GetTeamStats(players);
-
                 foreach (var player in players)
                 {
-                    handlePlayer(player, averageLevel, teamKills, currentGameId);
+                    handlePlayer(player, currentGameId);
                 }
             }
             Console.WriteLine("------------------");
             
         }
 
-        private static (float averageLevel, int teamKills) GetTeamStats(string[] players)
-        {
-            float averageLevel = 0;
-            int teamKills = 0;
-            foreach (var player in players)
-            {
-                int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
-                int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
-                averageLevel += level;
-                teamKills += kills;
-            }
-            averageLevel = averageLevel / players.Length;
-
-            return (averageLevel, teamKills);
-        }
-
-        private static void handlePlayer(string player, float averageLevel, int teamKills, string currentGameId)
+        private static void handlePlayer(string player, string currentGameId)
         {
             // parse some basic data about the player we are currently looping through
             string playerName = player.Split("summonerName\":\"")[1].Split('"')[0];
@@ -210,45 +181,9 @@ namespace ReportMyTeam
             {
                 // parse some data
                 string playerPuuid = player.Split("puuid\":\"")[1].Split('"')[0];
-                string isLeaver = player.Split("\"leaver\":")[1].Split(',')[0];
-                int level = Int32.Parse(player.Split("LEVEL\":")[1].Split(',')[0]);
-                int kills = Int32.Parse(player.Split("CHAMPIONS_KILLED\":")[1].Split(',')[0]);
-                int deaths = Int32.Parse(player.Split("NUM_DEATHS\":")[1].Split(',')[0]);
-                int assists = Int32.Parse(player.Split("ASSISTS\":")[1].Split(',')[0]);
 
                 // make up some reasons
-                int reasons = 0;
-                string reportReason = "";
-
-                // if is marked as afk by the system, or is 25% behind in levels compared to average level, or has <25% kp, report for afking
-                float kp = (float)(kills + assists) / teamKills;
-                if (isLeaver == "true" || (float)(level * 0.75) > averageLevel || kp < 0.25)
-                {
-                    reportReason += ",\"LEAVING_AFK\"";
-                    reasons++;
-                }
-
-                // if has <0.5 kda, report for inting
-                float kda = (float)(kills + assists) / deaths;
-                if (kda < 0.5)
-                {
-                    reportReason += ",\"ASSISTING_ENEMY_TEAM\"";
-                    reasons++;
-                }
-
-                // fill the reason with generic stuff related to toxicity cause everyone is toxic in this shitty game
-                if (reasons == 2)
-                {
-                    reportReason = "\"NEGATIVE_ATTITUDE\"" + reportReason;
-                }
-                else if (reasons == 1)
-                {
-                    reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\"" + reportReason;
-                }
-                else
-                {
-                    reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"HATE_SPEECH\"";
-                }
+                string reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"LEAVING_AFK\",\"ASSISTING_ENEMY_TEAM\",\"HATE_SPEECH\",\"THIRD_PARTY_TOOLS\",\"INAPPROPRIATE_NAME\"";
 
                 // send the report
                 string[] result = LCU.clientRequest("POST", "lol-end-of-game/v2/player-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
