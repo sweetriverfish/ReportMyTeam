@@ -126,7 +126,6 @@ namespace ReportMyTeam
         private static void hanldeEndGame()
         {
             string[] currentTeam = LCU.clientRequest("GET", "lol-end-of-game/v1/eog-stats-block");
-            Console.WriteLine(currentTeam[1]);
 
             if (currentTeam[0] != "200")
             {
@@ -167,15 +166,16 @@ namespace ReportMyTeam
             // parse some basic data about the player we are currently looping through
             string playerName = player.Split("summonerName\":\"")[1].Split('"')[0];
             string playerId = player.Split("summonerId\":")[1].Split(',')[0];
+            string champName = player.Split("championName\":\"")[1].Split('"')[0];
 
             // ignored certain players cause bias
             if (currentPlayerId == playerId)
             {
-                Console.WriteLine(playerName + " is the current account, ignoring");
+                Console.WriteLine(playerName + " (" + champName + ") is the current account, ignoring");
             }
             else if (friendsIds.Contains(playerId))
             {
-                Console.WriteLine(playerName + " is a friend, ignoring");
+                Console.WriteLine(playerName + " (" + champName + ") is a friend, ignoring");
             }
             else
             {
@@ -190,11 +190,11 @@ namespace ReportMyTeam
 
                 if (result[0] == "200")
                 {
-                    Console.WriteLine(playerName + " is a being reported for " + reportReason);
+                    Console.WriteLine(playerName + " (" + champName + ") is a being reported for " + reportReason);
                 }
                 else
                 {
-                    Console.WriteLine("Failed to report " + playerName);
+                    Console.WriteLine("Failed to report " + playerName + " (" + champName + ")");
                 }
             }
         }
