@@ -190,7 +190,7 @@ namespace ReportMyTeam
 
                 if (result[0] == "204")
                 {
-                    Console.WriteLine(playerName + " (" + champName + ") is a being reported for " + reportReason);
+                    Console.WriteLine(playerName + " (" + champName + ") has been reported");
                 }
                 else
                 {
