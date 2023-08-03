@@ -186,9 +186,9 @@ namespace ReportMyTeam
                 string reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"LEAVING_AFK\",\"ASSISTING_ENEMY_TEAM\",\"HATE_SPEECH\",\"THIRD_PARTY_TOOLS\",\"INAPPROPRIATE_NAME\"";
 
                 // send the report
-                string[] result = LCU.clientRequest("POST", "lol-end-of-game/v2/player-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
+                string[] result = LCU.clientRequest("POST", "lol-player-report-sender/v1/end-of-game-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
 
-                if (result[0] == "200")
+                if (result[0] == "204")
                 {
                     Console.WriteLine(playerName + " (" + champName + ") is a being reported for " + reportReason);
                 }
