@@ -183,7 +183,7 @@ namespace ReportMyTeam
                 string playerPuuid = player.Split("puuid\":\"")[1].Split('"')[0];
 
                 // make up some reasons
-                string reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"LEAVING_AFK\",\"ASSISTING_ENEMY_TEAM\",\"HATE_SPEECH\",\"THIRD_PARTY_TOOLS\",\"INAPPROPRIATE_NAME\"";
+                string reportReason = "\"NEGATIVE_ATTITUDE\",\"VERBAL_ABUSE\",\"LEAVING_AFK\",\"ASSISTING_ENEMY_TEAM\",\"DISRUPTIVE_GAMEPLAY\",\"HATE_SPEECH\",\"THIRD_PARTY_TOOLS\",\"INAPPROPRIATE_NAME\"";
 
                 // send the report
                 string[] result = LCU.clientRequest("POST", "lol-player-report-sender/v1/end-of-game-reports", '{' + "\"gameId\":" + currentGameId + ",\"categories\":[" + reportReason + "],\"offenderSummonerId\":" + playerId + ",\"offenderPuuid\":\"" + playerPuuid + "\"" + '}');
@@ -200,3 +200,4 @@ namespace ReportMyTeam
         }
     }
 }
+
